@@ -1,0 +1,33 @@
+{
+  "name": "restaurant-app-e",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atulnk1/restaurant-app-e.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/atulnk1/restaurant-app-e/issues"
+  },
+  "homepage": "https://github.com/atulnk1/restaurant-app-e#readme",
+  "dependencies": {
+    "@prisma/client": "^3.6.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "nodemon": "^2.0.15",
+    "passport": "^0.5.0",
+    "passport-jwt": "^4.0.0"
+  },
+  "devDependencies": {
+    "prisma": "^3.6.0"
+  }
+}

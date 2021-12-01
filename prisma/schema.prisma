@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model restaurant {
+  id Int @id @default(autoincrement())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  restaurant_name String @db.VarChar(255)
+  restaurant_location_address String @db.VarChar(255)
+  restaurant_location_city String @db.VarChar(255)
+  restaurant_location_lat Decimal @db.Decimal(8,6)
+  restaurant_location_long Decimal @db.Decimal(9,6)
+  restaurant_image String @db.Text
+  restaurant_opening_hours String @db.VarChar(255)
+  restaurant_facilities String[]
+  restaurant_cuisine String[]
+  restaurant_cost Int
+  restaurant_start_date DateTime
+  restaurant_end_date DateTime
+  restaurant_start_time DateTime @db.Time()
+  restaurant_end_time DateTime @db.Time()
+  restaurant_average_seating_time Int
+  restaurant_max_table_one Int
+  restaurant_max_table_two Int
+  restaurant_max_table_three Int
+  restaurant_max_table_four Int
+  restaurant_max_table_five Int
+  restaurant_status String @default("open")
+
+}
+
+model diner_user {
+  id String @id @default(uuid())
+  email String @unique
+  first_name String 
+  last_name String
+  password String @db.VarChar(255)
+}
