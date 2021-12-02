@@ -17,17 +17,18 @@ model restaurant {
   restaurant_name String @db.VarChar(255)
   restaurant_location_address String @db.VarChar(255)
   restaurant_location_city String @db.VarChar(255)
+  restaurant_location_country String @db.VarChar(255)
   restaurant_location_lat Decimal @db.Decimal(8,6)
   restaurant_location_long Decimal @db.Decimal(9,6)
-  restaurant_image String @db.Text
+  restaurant_image String[] @db.Text
   restaurant_opening_hours String @db.VarChar(255)
   restaurant_facilities String[]
   restaurant_cuisine String[]
   restaurant_cost Int
   restaurant_start_date DateTime
   restaurant_end_date DateTime
-  restaurant_start_time DateTime @db.Time()
-  restaurant_end_time DateTime @db.Time()
+  restaurant_start_time String
+  restaurant_end_time String
   restaurant_average_seating_time Int
   restaurant_max_table_one Int
   restaurant_max_table_two Int
@@ -35,7 +36,7 @@ model restaurant {
   restaurant_max_table_four Int
   restaurant_max_table_five Int
   restaurant_status String @default("open")
-
+  reservation reservations[]
 }
 
 model diner_user {
@@ -44,4 +45,19 @@ model diner_user {
   first_name String 
   last_name String
   password String @db.VarChar(255)
+  reservations reservations[]
+}
+
+model reservations {
+  id String @id @default(uuid())
+  party_size Int
+  date DateTime
+  time String
+  reservation_status String @default("booked")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  diner diner_user @relation(fields: [diner_id], references: [id])
+  diner_id String
+  restaurant restaurant @relation(fields: [restaurant_id], references: [id])
+  restaurant_id Int
 }

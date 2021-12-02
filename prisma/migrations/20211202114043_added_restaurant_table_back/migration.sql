@@ -1,0 +1,30 @@
+-- CreateTable
+CREATE TABLE "restaurant" (
+    "id" SERIAL NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "restaurant_name" VARCHAR(255) NOT NULL,
+    "restaurant_location_address" VARCHAR(255) NOT NULL,
+    "restaurant_location_city" VARCHAR(255) NOT NULL,
+    "restaurant_location_country" VARCHAR(255) NOT NULL,
+    "restaurant_location_lat" DECIMAL(8,6) NOT NULL,
+    "restaurant_location_long" DECIMAL(9,6) NOT NULL,
+    "restaurant_image" TEXT[],
+    "restaurant_opening_hours" VARCHAR(255) NOT NULL,
+    "restaurant_facilities" TEXT[],
+    "restaurant_cuisine" TEXT[],
+    "restaurant_cost" INTEGER NOT NULL,
+    "restaurant_start_date" TIMESTAMP(3) NOT NULL,
+    "restaurant_end_date" TIMESTAMP(3) NOT NULL,
+    "restaurant_start_time" TEXT NOT NULL,
+    "restaurant_end_time" TEXT NOT NULL,
+    "restaurant_average_seating_time" INTEGER NOT NULL,
+    "restaurant_max_table_one" INTEGER NOT NULL,
+    "restaurant_max_table_two" INTEGER NOT NULL,
+    "restaurant_max_table_three" INTEGER NOT NULL,
+    "restaurant_max_table_four" INTEGER NOT NULL,
+    "restaurant_max_table_five" INTEGER NOT NULL,
+    "restaurant_status" TEXT NOT NULL DEFAULT E'open',
+
+    CONSTRAINT "restaurant_pkey" PRIMARY KEY ("id")
+);

@@ -1,5 +1,5 @@
 const passportJwt = require('passport-jwt');
-const { JWT_SECRET } = require('./config/keys')
+const { JWT_SECRET } = require('../config/keys')
 const { PrismaClient } = require("@prisma/client");
 
 const { diner_user } = new PrismaClient()
