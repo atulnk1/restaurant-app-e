@@ -11,6 +11,7 @@ passport.use(strategy)
 // Required Booking App Controllers
 const authController = require("./controllers/booking_app/authController")
 const bookingRestaurantController = require("./controllers/booking_app/bookingRestaurantController")
+const bookingReservationController = require("./controllers/booking_app/bookingReservationController")
 
 // Required Restaurant Management App Controllers
 const restaurantController = require("./controllers/restaurant_management_app/restaurantController")
@@ -26,6 +27,7 @@ app.use(passport.initialize());
 // Linking to Booking App Controllers
 app.use('/api', authController)
 app.use('/api', bookingRestaurantController)
+app.use('/api', bookingReservationController)
 
 // Linking to Restaurant Management App Controllers
 app.use('/api', restaurantController)
