@@ -29,6 +29,7 @@ controller.get("/restaurant/list", async (req, res) => {
     
 })
 
+// GET all restaurants in a particular city 
 controller.get("/restaurant/:city", async(req, res) => {
     
     try {
