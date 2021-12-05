@@ -1,9 +1,10 @@
 const express = require("express");
 const controller = express.Router();
 const passport = require("passport");
-const { PrismaClient } = require("@prisma/client");
+// const { PrismaClient } = require("@prisma/client");
+const prismaClient = require('../../controller_support/prisma');
 
-const { restaurant } = new PrismaClient();
+const { restaurant } = prismaClient;
 
 // GET all restaurants in the database
 controller.get("/restaurant/list", async (req, res) => {

@@ -61,3 +61,13 @@ model reservations {
   restaurant restaurant @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
 }
+
+model availabilityDateTime {
+  id Int @id @default(autoincrement())
+  date_time String
+  available_table_one Int
+  available_table_two Int
+  available_table_three Int
+  available_table_four Int
+  available_table_five Int
+}

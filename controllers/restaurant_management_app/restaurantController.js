@@ -1,10 +1,11 @@
 const express = require("express");
 const controller = express.Router();
 const passport = require("passport");
-const { PrismaClient } = require("@prisma/client");
+// const { PrismaClient } = require("@prisma/client");
+const prismaClient = require('../../controller_support/prisma');
 const moment = require("moment");
 
-const { restaurant } = new PrismaClient()
+const { restaurant } = prismaClient
 
 
 

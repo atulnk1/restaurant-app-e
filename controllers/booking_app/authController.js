@@ -1,11 +1,13 @@
 const express = require("express");
 const controller = express.Router();
-const { PrismaClient } = require("@prisma/client");
+// const { PrismaClient } = require("@prisma/client");
+const prismaClient = require('../../controller_support/prisma');
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../../config/prod");
 
-const { diner_user } = new PrismaClient()
+const { diner_user } = prismaClient
 
 controller.post("/auth/register", async (req, res) => {
     try {

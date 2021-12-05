@@ -1,15 +1,14 @@
 const express = require("express");
 const controller = express.Router();
 const passport = require("passport");
-const { PrismaClient } = require("@prisma/client");
+// const { PrismaClient } = require("@prisma/client");
+const prismaClient = require('../../controller_support/prisma');
+const moment = require("moment")
 
-const { diner_user, restaurant, reservations } = new PrismaClient();
+const { reservations } = prismaClient
 
 // Middleware to check whether accessor is logged in 
 const authChecker = passport.authenticate("jwt", { session: false })
-
-
-
 
 // POST a reservation
 controller.post("/reservation/book", authChecker, async (req, res) => {
@@ -25,8 +24,6 @@ controller.post("/reservation/book", authChecker, async (req, res) => {
         // JavaScript date is set as MM/DD/YYYY so we need to update that
         const dateArray = date.split("/")
         const newDate = dateArray[2] + "/" + dateArray[1] + "/" + dateArray[0]
-
-        console.log(newDate)
 
         const makeReservation = await reservations.create({
             data: {
@@ -47,28 +44,50 @@ controller.post("/reservation/book", authChecker, async (req, res) => {
     }
 })
 
-// GET all upcoming reservations
-controller.get("/reservation/upcoming", authChecker, async (req, res) => {
+// GET either upcoming or past reservation
+controller.get("/reservation", authChecker, async (req, res) => {
     try {
-        
+
+        const reservationState = req.query.reservation_state
+
         const currentDate = new Date()
 
         const diner_id = req.user.id
 
-        const upcomingReservations = await reservations.findMany({
-            where:{
-                date: {
-                    gte: currentDate
+        if(reservationState === "upcoming") {
+            const upcomingReservations = await reservations.findMany({
+                where:{
+                    date: {
+                        gte: currentDate
+                    },
+                    diner_id
                 },
-                diner_id
-            }
-        })
+                orderBy: {
+                    date: 'asc'
+                }
+            })
+    
+            return res.json(upcomingReservations)
 
-        if(!upcomingReservations) {
-            res.status(422).json({error: "Sorry, you have no upcoming reservations"})
+        } else if (reservationState === "past") {
+            const pastReservations = await reservations.findMany({
+                where:{
+                    date: {
+                        lt: currentDate
+                    },
+                    diner_id
+                },
+                orderBy: {
+                    date: 'asc'
+                }
+            })
+    
+            return res.json(pastReservations)
+        } else {
+            return res.status(422).json({error: "Invalid query parameter"})
         }
 
-        res.json(upcomingReservations)
+        
 
     } catch (e) {
         return res.status(400).json({
@@ -78,37 +97,6 @@ controller.get("/reservation/upcoming", authChecker, async (req, res) => {
     }
 })
 
-// GET all past reservations
-
-controller.get("/reservation/past", authChecker, async (req, res) => {
-    try {
-        
-        const currentDate = new Date()
-
-        const diner_id = req.user.id
-
-        const upcomingReservations = await reservations.findMany({
-            where:{
-                date: {
-                    lte: currentDate
-                },
-                diner_id
-            }
-        })
-
-        if(!upcomingReservations) {
-            res.status(422).json({error: "Sorry, you have no upcoming reservations"})
-        }
-
-        res.json(upcomingReservations)
-
-    } catch (e) {
-        return res.status(400).json({
-            name: e.name,
-            message: e.message
-        })
-    }
-})
 
 // GET reservation information: party_size, date and time to edit 
 controller.get("/reservation/:reservation_id/edit", authChecker, async (req, res) => {
@@ -213,6 +201,54 @@ controller.patch("/reservation/:reservation_id/cancel", authChecker, async (req,
 
 })
 
+controller.post("/test/datesandtime", async (req, res) => {
+    const { start_date, end_date, start_time, end_time} = req.body
 
+    const startDateArray = start_date.split("/")
+    const startDate = startDateArray[2] + "-" + startDateArray[1] + "-" + startDateArray[0]
+    const startMomentDate = moment(startDate, ["MM-DD-YYYY", "YYYY-MM-DD"])
+
+    const endDateArray = end_date.split("/")
+    const endDate = endDateArray[2] + "-" + endDateArray[1] + "-" + endDateArray[0]
+    const endMomentDate = moment(endDate, ["MM-DD-YYYY", "YYYY-MM-DD"])
+
+    const dateRange = [moment({...startMomentDate})]
+
+    while(startMomentDate.date() != endMomentDate.date()){
+        startMomentDate.add(1, 'day')
+        dateRange.push(moment({...startMomentDate}))
+    }
+
+    dateRange.map(x => x.format("YYYY-MM-DD"))
+    // return res.json(dateRange.map(x => x.format("YYYY-MM-DD")))
+    // return res.json(dateRange)
+
+    const startTime = moment(start_time, 'HH:mm')
+    const endTime = moment(end_time, 'HH:mm')
+
+    startTime.minutes(Math.ceil(startTime.minutes() / 15) * 15)
+
+    const timeList = []
+
+    const current = moment(startTime)
+
+    while (current <= endTime) {
+        timeList.push(current.format('HH:mm'))
+        current.add(15, 'minutes')
+    }
+
+    console.log(timeList)
+
+    const dateTimeList = []
+
+    for(let date of dateRange) {
+        for(let time of timeList){
+            dateTimeList.push(date.format("YYYY-MM-DD") + " " + time)
+        }
+    }
+
+    return res.json(dateTimeList)
+
+})
 
 module.exports = controller
