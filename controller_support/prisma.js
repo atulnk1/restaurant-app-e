@@ -1,3 +1,4 @@
+// This is a helper function to invoke the prisma client only once rather than creating individual connections in the controller
 const { PrismaClient } = require("@prisma/client");
 
 let prisma

@@ -1,15 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 model restaurant {
   id Int @id @default(autoincrement())
   created_at DateTime @default(now())
@@ -52,8 +40,7 @@ model diner_user {
 model reservations {
   id String @id @default(uuid())
   party_size Int
-  display_date String
-  system_date DateTime
+  date DateTime
   time String
   reservation_status String @default("booked")
   created_at DateTime @default(now())
