@@ -24,8 +24,8 @@ const timeRangeGenerator = (startMomentTime, endMomentTime) => {
 
     return timeList
 }
-
-controller.post("/reservation/book2", authChecker, async (req,res) => {
+// Advanced version of the booking flow that takes into consideration availbility slots
+controller.post("/v2/reservation/book", authChecker, async (req,res) => {
     try {
 
         const diner_id = req.user.id
@@ -36,7 +36,6 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
             return res.status(422).json({error: "Fields are missing. Cannot make booking."})
         }
         
-
         // 1 Find the restaurants information: restaurant_average_seating_time
         const restaurantValues = await restaurant.findUnique({
             where: {
@@ -52,7 +51,7 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
             }
         })
 
-        console.log(restaurantValues)
+        // console.log(restaurantValues)
         // 2 Create your intervals based on this and the the seating time
         const startBookingTime = moment(time, 'HH:mm')
         const tempTime = moment(time, 'HH:mm')
@@ -90,7 +89,7 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
 
                 // As long as even one of the times slots is not available, user will not be able to book
                 if(availabilityCheck.length < dateTimeList.length) {
-                    return res.status(404).json({error: "Sorry not slots available"})
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
                 }
 
                 // Updates the available tables for the said booking time and for X time slots after that
@@ -127,7 +126,7 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
                     }
                 })
                 if(availabilityCheck.length < dateTimeList.length) {
-                    return res.status(404).json({error: "Sorry not slots available"})
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
                 }
                 for(let indAvail of availabilityCheck) {
                     availabilityUpdate = await availabilityDateTime.update({
@@ -159,7 +158,7 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
                     }
                 })
                 if(availabilityCheck.length < dateTimeList.length) {
-                    return res.status(404).json({error: "Sorry not slots available"})
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
                 }
                 for(let indAvail of availabilityCheck) {
                     availabilityUpdate = await availabilityDateTime.update({
@@ -191,7 +190,7 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
                     }
                 })
                 if(availabilityCheck.length < dateTimeList.length) {
-                    return res.status(404).json({error: "Sorry not slots available"})
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
                 }
                 for(let indAvail of availabilityCheck) {
                     availabilityUpdate = await availabilityDateTime.update({
@@ -223,7 +222,7 @@ controller.post("/reservation/book2", authChecker, async (req,res) => {
                     }
                 })
                 if(availabilityCheck.length < dateTimeList.length) {
-                    return res.status(404).json({error: "Sorry not slots available"})
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
                 }
                 for(let indAvail of availabilityCheck) {
                     availabilityUpdate = await availabilityDateTime.update({
@@ -495,7 +494,7 @@ controller.get("/reservation", authChecker, async (req, res) => {
 })
 
 
-// GET reservation information: party_size, date and time to edit 
+// GET reservation information: party_size, date and to edit. restaurant_id sent as well to find restaurant to edit later
 controller.get("/reservation/:reservation_id/edit", authChecker, async (req, res) => {
     try {
 
@@ -509,6 +508,7 @@ controller.get("/reservation/:reservation_id/edit", authChecker, async (req, res
                 party_size: true,
                 display_date: true,
                 time: true,
+                restaurant_id: true
             }
         })
 
@@ -525,6 +525,511 @@ controller.get("/reservation/:reservation_id/edit", authChecker, async (req, res
         })
     }
 }) 
+
+// Advanced version of the edit flow that takes into consideration availbility slots
+controller.patch("/v2/reservation/:reservation_id", authChecker, async(req, res ) => {
+    try {
+        const reservation_id = req.params.reservation_id
+
+        const { party_size, date, time, restaurant_id } = req.body
+
+        if(!party_size || !date || !time || !restaurant_id){
+            return res.status(422).json({error: "Reservation fields are missing!"})
+        }
+
+        // 1 Find the restaurants information: restaurant_average_seating_time
+        const restaurantValues = await restaurant.findUnique({
+            where: {
+                id: restaurant_id
+            },
+            select: {
+                restaurant_average_seating_time: true,
+                restaurant_max_table_one: true,
+                restaurant_max_table_two: true,
+                restaurant_max_table_three: true,
+                restaurant_max_table_four: true,
+                restaurant_max_table_five: true,
+            }
+        })
+
+        // 2 [Current Booking]: Get the current reservation details that the user is trying to edit, store this to update later
+
+        const currentReservationAvailabilityDateTime = await reservations.findUnique({
+            where: {
+                id: reservation_id
+            }, 
+            select: {
+                party_size: true,
+                display_date: true,
+                time: true,
+                restaurant_id: true
+            }
+        })
+
+        // 2A [Current Booking]:Get a list of time slots that are used for your current booking
+
+        const currentStartBookingTime = moment(currentReservationAvailabilityDateTime.time, 'HH:mm')
+        const currentTempTime = moment(currentReservationAvailabilityDateTime.time, 'HH:mm')
+        const currentEndBookingTime = currentTempTime.add(restaurantValues.restaurant_average_seating_time, 'minutes')
+        const currentTimeList = timeRangeGenerator(currentStartBookingTime, currentEndBookingTime)
+
+        // 2B [Current Booking]:Set the current date in the right format for later
+        const currentDateArray = currentReservationAvailabilityDateTime.display_date.split("-")
+        const currentDate = currentDateArray[2] + "-" + currentDateArray[1] + "-" + currentDateArray[0]
+
+
+        // 3A [New Booking]: Get a list of time slots that will be used for the new booking
+        const newStartBookingTime = moment(time, 'HH:mm')
+        const newTempTime = moment(time, 'HH:mm')
+        const newEndBookingTime = newTempTime.add(restaurantValues.restaurant_average_seating_time, 'minutes')
+        const newTimeList = timeRangeGenerator(newStartBookingTime, newEndBookingTime)
+        // console.log(newEndBookingTime)
+
+        // 3B [New Booking]: Set the current date in the right format to check availbility
+        const newDateArray = date.split('-')
+        const newDate = newDateArray[2] + "-" + newDateArray[1] + "-" + newDateArray[0]
+        const displayDate = "" + moment(newDate, 'YYYY-MM-DD').format('DD-MM-YYYY')
+
+       
+
+        // 4 [New Booking]: Check availability and update the existing booking with new details 
+        const newDateTimeList = []
+        let newAvailabilityCheck = false
+        let newAvailabilityUpdate = false
+
+        
+
+        switch(party_size) {
+            case(1):
+                // 4A [New Booking]: Generate list of date_time values to check if the new booking is possible
+                for(let indTime of newTimeList) {
+                    newDateTimeList.push(
+                        {
+                            date_time: "" + moment(newDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            available_table_one: {
+                                gt: 0
+                            },
+                            restaurant_id
+                        }
+                    )
+                }
+                // 4B [New Booking]: Find the list of next time slots that are available for the new booking
+                newAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: newDateTimeList
+                    }
+                })
+
+                // 4B1 [New Booking]: If the number of time slots available is less than the number of times, throw error
+                if(newAvailabilityCheck.length < newDateTimeList.length) {
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
+                }
+
+                // 4B2 [New Booking]: If the number of time slots available is the same as the number of time slots, decrement the availbility window
+                for(let indAvail of newAvailabilityCheck) {
+                    newAvailabilityUpdate = await availabilityDateTime.update({
+                        where: {
+                            id: indAvail.id
+                        },
+                        data: {
+                            available_table_one: {
+                                decrement: 1
+                            }
+                        }
+                    })
+                }
+                break;
+            case(2):
+                // 4A [New Booking]: Generate list of date_time values to check if the new booking is possible
+                for(let indTime of newTimeList) {
+                    newDateTimeList.push(
+                        {
+                            date_time: "" + moment(newDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            available_table_two: {
+                                gt: 0
+                            },
+                            restaurant_id
+                        }
+                    )
+                }
+
+                // 4B [New Booking]: Find the list of next time slots that are available for the new booking
+                newAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: newDateTimeList
+                    }
+                })
+
+                // 4B1 [New Booking]: If the number of time slots available is less than the number of times, throw error
+                if(newAvailabilityCheck.length < newDateTimeList.length) {
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
+                }
+
+                // 4B2 [New Booking]: If the number of time slots available is the same as the number of time slots, decrement the availbility window
+                for(let indAvail of newAvailabilityCheck) {
+                    newAvailabilityUpdate = await availabilityDateTime.update({
+                        where: {
+                            id: indAvail.id
+                        },
+                        data: {
+                            available_table_two: {
+                                decrement: 1
+                            }
+                        }
+                    })
+                    // console.log(indAvail)
+                }
+                break;
+            case(3):
+                // 4A [New Booking]: Generate list of date_time values to check if the new booking is possible
+                for(let indTime of newTimeList) {
+                    newDateTimeList.push(
+                        {
+                            date_time: "" + moment(newDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            available_table_three: {
+                                gt: 0
+                            },
+                            restaurant_id
+                        }
+                    )
+                }
+                // 4B [New Booking]: Find the list of next time slots that are available for the new booking
+                newAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: newDateTimeList
+                    }
+                })
+
+                // 4B1 [New Booking]: If the number of time slots available is less than the number of times, throw error
+                if(newAvailabilityCheck.length < newDateTimeList.length) {
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
+                }
+
+                // 4B2 [New Booking]: If the number of time slots available is the same as the number of time slots, decrement the availbility window
+                for(let indAvail of newAvailabilityCheck) {
+                    newAvailabilityUpdate = await availabilityDateTime.update({
+                        where: {
+                            id: indAvail.id
+                        },
+                        data: {
+                            available_table_three: {
+                                decrement: 1
+                            }
+                        }
+                    })
+                }
+                break;
+            case(4):
+                // 4A [New Booking]: Generate list of date_time values to check if the new booking is possible
+                for(let indTime of newTimeList) {
+                    newDateTimeList.push(
+                        {
+                            date_time: "" + moment(newDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            available_table_four: {
+                                gt: 0
+                            },
+                            restaurant_id
+                        }
+                    )
+                }
+                // 4B [New Booking]: Find the list of next time slots that are available for the new booking
+                newAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: newDateTimeList
+                    }
+                })
+
+                // 4B1 [New Booking]: If the number of time slots available is less than the number of times, throw error
+                if(newAvailabilityCheck.length < newDateTimeList.length) {
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
+                }
+
+                // 4B2 [New Booking]: If the number of time slots available is the same as the number of time slots, decrement the availbility window
+                for(let indAvail of newAvailabilityCheck) {
+                    newAvailabilityUpdate = await availabilityDateTime.update({
+                        where: {
+                            id: indAvail.id
+                        },
+                        data: {
+                            available_table_four: {
+                                decrement: 1
+                            }
+                        }
+                    })
+                }
+                break;
+            case(5):
+                // 4A [New Booking]: Generate list of date_time values to check if the new booking is possible
+                for(let indTime of newTimeList) {
+                    newDateTimeList.push(
+                        {
+                            date_time: "" + moment(newDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            available_table_five: {
+                                gt: 0
+                            },
+                            restaurant_id
+                        }
+                    )
+                }
+                // 4B [New Booking]: Find the list of next time slots that are available for the new booking
+                newAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: newDateTimeList
+                    }
+                })
+
+                // 4B1 [New Booking]: If the number of time slots available is less than the number of times, throw error
+                if(newAvailabilityCheck.length < newDateTimeList.length) {
+                    return res.status(404).json({error: "Sorry we are unable to book for this party size, date or time. Please try another combination!"})
+                }
+
+                // 4B2 [New Booking]: If the number of time slots available is the same as the number of time slots, decrement the availbility window
+                for(let indAvail of newAvailabilityCheck) {
+                    newAvailabilityUpdate = await availabilityDateTime.update({
+                        where: {
+                            id: indAvail.id
+                        },
+                        data: {
+                            available_table_five: {
+                                decrement: 1
+                            }
+                        }
+                    })
+                }
+                break;
+        }
+
+        // 5 [New Booking]: Update the new booking for the reservation
+        const updateReservation = await reservations.update({
+            where: {
+                id: reservation_id
+            }, 
+            data: {
+                party_size,
+                display_date: displayDate,
+                system_date: new Date(newDate),
+                time
+            }
+        })
+
+        if(!updateReservation) {
+            return res.status(422).json({error: "Unabled to update your reservation!"})
+        }
+
+
+        // 6 [Current Booking]: Find the current time slots that were reserved and increment them
+        const currentDateTimeList = []
+        let currentAvailabilityCheck = false
+        let currentAvailbilityUpdate = false 
+
+        switch(currentReservationAvailabilityDateTime.party_size) {
+            case(1):
+                // 6A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id
+                        }
+                    )
+                }
+
+                // 6B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 6C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 6D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_one < restaurantValues.restaurant_max_table_one) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_one: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                    
+                }
+                break;
+            case(2):
+                // 6A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id
+                        }
+                    )
+                }
+
+                // 6B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 6C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 6D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_two < restaurantValues.restaurant_max_table_two) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_two: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                    
+                }
+                break;
+            case(3):
+                // 6A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id
+                        }
+                    )
+                }
+
+                // 6B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 6C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 6D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_three < restaurantValues.restaurant_max_table_three) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_three: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                }
+                break;
+            case(4):
+                // 6A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id
+                        }
+                    )
+                }
+
+                // 6B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 6C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 6D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_four < restaurantValues.restaurant_max_table_four) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_four: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                }
+                break;
+            case(5):
+                // 6A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id
+                        }
+                    )
+                }
+
+                // 6B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 6C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 6D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_five < restaurantValues.restaurant_max_table_five) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_five: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                }
+            break;
+        }
+
+
+        return res.send(updateReservation)
+
+
+    } catch (e) {
+        return res.status(400).json({
+            name: e.name,
+            message: e.message
+        })
+    }
+})
+
+
 
 // PATCH edit reservation details
 controller.patch("/reservation/:reservation_id", authChecker, async(req, res) => {
@@ -849,6 +1354,282 @@ controller.patch("/reservation/:reservation_id", authChecker, async(req, res) =>
         
 
         return res.send(updateReservation)
+
+    } catch (e) {
+        return res.status(400).json({
+            name: e.name,
+            message: e.message
+        })
+    }
+})
+
+
+controller.patch("/v2/reservation/:reservation_id/cancel", authChecker, async(req, res) => {
+    try {
+        const reservation_id = req.params.reservation_id
+
+        // 1 Get the details of the existing booking: restaurant_id, date, time, party_size
+        const currentReservationAvailabilityDateTime = await reservations.findUnique({
+            where: {
+                id: reservation_id
+            }, 
+            select: {
+                party_size: true,
+                display_date: true,
+                time: true,
+                restaurant_id: true,
+                reservation_status: true
+            }
+        })
+
+        if(currentReservationAvailabilityDateTime.reservation_status === 'cancelled') {
+            return res.status(400).json({error: "Reservation is already canclled!"})
+        }
+        // 2 Get information of the restaurant that is being called: average seating time, max seating capacity
+        const restaurantValues = await restaurant.findUnique({
+            where: {
+                id: currentReservationAvailabilityDateTime.restaurant_id
+            },
+            select: {
+                restaurant_average_seating_time: true,
+                restaurant_max_table_one: true,
+                restaurant_max_table_two: true,
+                restaurant_max_table_three: true,
+                restaurant_max_table_four: true,
+                restaurant_max_table_five: true,
+            }
+        })
+
+        // 3 Get the list of date_times that need to be queried
+
+        console.log(currentReservationAvailabilityDateTime)
+
+        const currentStartBookingTime = moment(currentReservationAvailabilityDateTime.time, 'HH:mm')
+        const currentTempTime = moment(currentReservationAvailabilityDateTime.time, 'HH:mm')
+        const currentEndBookingTime = currentTempTime.add(restaurantValues.restaurant_average_seating_time, 'minutes')
+        const currentTimeList = timeRangeGenerator(currentStartBookingTime, currentEndBookingTime)
+
+        const currentDateArray = currentReservationAvailabilityDateTime.display_date.split("-")
+        const currentDate = currentDateArray[2] + "-" + currentDateArray[1] + "-" + currentDateArray[0]
+
+
+        // 4 Update the list of date_times by incrementing them
+
+        const currentDateTimeList = []
+        let currentAvailabilityCheck = false
+        let currentAvailbilityUpdate = false 
+
+        switch(currentReservationAvailabilityDateTime.party_size) {
+            case(1):
+                // 4A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id: currentReservationAvailabilityDateTime.restaurant_id
+                        }
+                    )
+                }
+
+                // 4B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 4C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 4D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_one < restaurantValues.restaurant_max_table_one) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_one: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                    
+                }
+                break;
+            case(2):
+                // 4A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id: currentReservationAvailabilityDateTime.restaurant_id
+                        }
+                    )
+                }
+
+                // 4B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 4C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 4D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_two < restaurantValues.restaurant_max_table_two) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_two: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                    
+                }
+                break;
+            case(3):
+                // 4A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id: currentReservationAvailabilityDateTime.restaurant_id
+                        }
+                    )
+                }
+
+                // 4B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 4C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 4D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_three < restaurantValues.restaurant_max_table_three) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_three: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                }
+                break;
+            case(4):
+                // 4A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id: currentReservationAvailabilityDateTime.restaurant_id
+                        }
+                    )
+                }
+
+                // 4B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 4C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 4D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_four < restaurantValues.restaurant_max_table_four) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_four: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                }
+                break;
+            case(5):
+                // 4A [Current Booking]: Generate a list of availability ids that will now be available 
+                for(let indTime of currentTimeList) {
+                    currentDateTimeList.push(
+                        {
+                            date_time: "" + moment(currentDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                            restaurant_id: currentReservationAvailabilityDateTime.restaurant_id
+                        }
+                    )
+                }
+
+                // 4B [Current Booking]: Find the list of availability date times that need to be updated
+                currentAvailabilityCheck = await availabilityDateTime.findMany({
+                    where: {
+                        OR: currentDateTimeList
+                    }
+                })
+                // 4C [Current Booking]: This check will most likely not be triggered but best to make sure 
+                if(currentAvailabilityCheck.length < currentTimeList.length) {
+                    return res.status(404).json({error: "Something went wrong when try to reset availability"})
+                }
+
+                // 4D [Current Booking]: Updating the availbility for the old timeslots, allowing them to be bookable
+                for(let indAvail of currentAvailabilityCheck) {
+                    if(indAvail.available_table_five < restaurantValues.restaurant_max_table_five) {
+                        newAvailabilityUpdate = await availabilityDateTime.update({
+                            where: {
+                                id: indAvail.id
+                            },
+                            data: {
+                                available_table_five: {
+                                    increment: 1
+                                }
+                            }
+                        })
+                    }
+                }
+            break;
+        }
+
+
+        // 5 Update the reservation status to cancelled
+        const cancelReservation = await reservations.update({
+            where: {
+                id: reservation_id
+            }, 
+            data: {
+                reservation_status: "cancelled"
+            }
+        })
+
+        if(!cancelReservation) {
+            return res.status(422).json({error: "Unabled to update your reservation!"})
+        }
+
+        return res.send(cancelReservation)
 
     } catch (e) {
         return res.status(400).json({
