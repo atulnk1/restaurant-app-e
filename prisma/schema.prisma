@@ -38,6 +38,7 @@ model restaurant {
   restaurant_max_table_three Int
   restaurant_max_table_four Int
   restaurant_max_table_five Int
+  restauarant_featured Boolean @default(false)
   restaurant_status String @default("open")
   reservation reservations[]
   availabilityDateTime availabilityDateTime[]

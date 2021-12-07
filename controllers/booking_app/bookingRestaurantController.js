@@ -347,6 +347,42 @@ controller.get("/restaurant/search", async(req, res) => {
     }
 })
 
+// Get featured restaurants
+
+controller.get("/restaurant/featured", async(req, res) => {
+    try {
+        
+        const { city } = req.body
+
+        const featuredList = await restaurant.findMany({
+            where: {
+                restauarant_featured: true,
+                restaurant_location_city: city
+            },
+            orderBy: {
+                updated_at: 'desc'
+            },
+            select: {
+                restaurant_name: true,
+                restaurant_description: true,
+                restaurant_image: true,
+                restaurant_cost: true
+            }
+        })
+
+        if(!featuredList) {
+            return res.status(404).json({error: "No featured restaurants!"})
+        }
+
+        return res.json(featuredList)
+
+    } catch (e) {
+        return res.status(400).json({
+            name: e.name,
+            message: e.message
+        })
+    }
+})
 
 controller.get("/restaurant/:id", async(req, res) => {
     try {
