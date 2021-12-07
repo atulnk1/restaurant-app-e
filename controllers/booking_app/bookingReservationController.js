@@ -5,7 +5,7 @@ const passport = require("passport");
 const prismaClient = require('../../controller_support/prisma');
 const moment = require("moment")
 
-const { reservations, availabilityDateTime, restaurant, Prisma } = prismaClient
+const { reservations, availabilityDateTime, restaurant } = prismaClient
 
 // Middleware to check whether accessor is logged in 
 const authChecker = passport.authenticate("jwt", { session: false })
@@ -42,12 +42,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
                 id: restaurant_id
             },
             select: {
-                restaurant_average_seating_time: true,
-                restaurant_max_table_one: true,
-                restaurant_max_table_two: true,
-                restaurant_max_table_three: true,
-                restaurant_max_table_four: true,
-                restaurant_max_table_five: true,
+                restaurant_average_seating_time: true
             }
         })
 
@@ -61,6 +56,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
         // console.log(timeList)
         const dateArray = date.split("-")
         const newDate = dateArray[2] + "-" + dateArray[1] + "-" + dateArray[0]
+        const displayDate = "" + moment(newDate, 'YYYY-MM-DD').format('DD-MM-YYYY')
 
         const dateTimeList = []
         let availabilityCheck = false
@@ -140,6 +136,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
                         }
                     })
                 }
+                break;
             case(3):
                 for(let indTime of timeList) {
                     dateTimeList.push(
@@ -172,6 +169,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
                         }
                     })
                 }
+                break;
             case(4):
                 for(let indTime of timeList) {
                     dateTimeList.push(
@@ -204,6 +202,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
                         }
                     })
                 }
+                break;
             case(5):
                 for(let indTime of timeList) {
                     dateTimeList.push(
@@ -236,6 +235,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
                         }
                     })
                 }
+                break;
         }
 
         // Add the reservation to the reservation table
@@ -247,6 +247,15 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
                 time,
                 diner_id,
                 restaurant_id
+            },
+            select: {
+                id: true,
+                party_size: true,
+                display_date: true,
+                time: true,
+                reservation_status: true,
+                diner_id: true,
+                restaurant_id: true
             }
         })
 
@@ -428,6 +437,15 @@ controller.post("/reservation/book", authChecker, async (req, res) => {
                 time,
                 diner_id,
                 restaurant_id
+            },
+            select: {
+                id: true,
+                party_size: true,
+                display_date: true,
+                time: true,
+                reservation_status: true,
+                diner_id: true,
+                restaurant_id: true
             }
         })
 
@@ -475,6 +493,15 @@ controller.get("/reservation", authChecker, async (req, res) => {
                 },
                 orderBy: {
                     system_date: 'asc'
+                },
+                select: {
+                    id: true,
+                    party_size: true,
+                    display_date: true,
+                    time: true,
+                    reservation_status: true,
+                    diner_id: true,
+                    restaurant_id: true
                 }
             })
     
@@ -809,11 +836,20 @@ controller.patch("/v2/reservation/:reservation_id", authChecker, async(req, res 
                 display_date: displayDate,
                 system_date: new Date(newDate),
                 time
+            },
+            select: {
+                id: true,
+                party_size: true,
+                display_date: true,
+                time: true,
+                reservation_status: true,
+                diner_id: true,
+                restaurant_id: true
             }
         })
 
         if(!updateReservation) {
-            return res.status(422).json({error: "Unabled to update your reservation!"})
+            return res.status(422).json({error: "Unable to update your reservation!"})
         }
 
 
@@ -1223,6 +1259,15 @@ controller.patch("/reservation/:reservation_id", authChecker, async(req, res) =>
                 display_date: displayDate,
                 system_date: new Date(newDate),
                 time
+            },
+            select: {
+                id: true,
+                party_size: true,
+                display_date: true,
+                time: true,
+                reservation_status: true,
+                diner_id: true,
+                restaurant_id: true
             }
         })
 
@@ -1402,7 +1447,7 @@ controller.patch("/v2/reservation/:reservation_id/cancel", authChecker, async(re
 
         // 3 Get the list of date_times that need to be queried
 
-        console.log(currentReservationAvailabilityDateTime)
+        // console.log(currentReservationAvailabilityDateTime)
 
         const currentStartBookingTime = moment(currentReservationAvailabilityDateTime.time, 'HH:mm')
         const currentTempTime = moment(currentReservationAvailabilityDateTime.time, 'HH:mm')
@@ -1622,6 +1667,15 @@ controller.patch("/v2/reservation/:reservation_id/cancel", authChecker, async(re
             }, 
             data: {
                 reservation_status: "cancelled"
+            },
+            select: {
+                id: true,
+                party_size: true,
+                display_date: true,
+                time: true,
+                reservation_status: true,
+                diner_id: true,
+                restaurant_id: true
             }
         })
 
@@ -1652,6 +1706,15 @@ controller.patch("/reservation/:reservation_id/cancel", authChecker, async (req,
             }, 
             data: {
                 reservation_status: "cancelled"
+            },
+            select: {
+                id: true,
+                party_size: true,
+                display_date: true,
+                time: true,
+                reservation_status: true,
+                diner_id: true,
+                restaurant_id: true
             }
         })
 
@@ -1668,68 +1731,6 @@ controller.patch("/reservation/:reservation_id/cancel", authChecker, async (req,
         })
     }
     
-
-})
-
-controller.post("/test/datesandtime", async (req, res) => {
-    const { start_date, end_date, start_time, end_time} = req.body
-
-    const dateRange = []
-    const startDateArray = start_date.split("/")
-    const startDate = startDateArray[2] + "-" + startDateArray[1] + "-" + startDateArray[0]
-    const startMomentDate = moment(startDate, 'YYYY-MM-DD')
-    console.log(startMomentDate)
-    // const startMomentDate = moment(startDate, "YYYY-MM-DD")
-    // console.log(startMomentDate)
-
-    const endDateArray = end_date.split("/")
-    const endDate = endDateArray[2] + "-" + endDateArray[1] + "-" + endDateArray[0]
-    const endMomentDate = moment(endDate, 'YYYY-MM-DD')
-    console.log(endMomentDate)
-    // const endMomentDate = moment(endDate, "YYYY-MM-DD")
-    // console.log(endMomentDate)
-    dateRange.push(startMomentDate.clone().format('YYYY-MM-DD'))
-    while(startMomentDate.add(1, 'days').diff(endMomentDate) <= 0){
-        // console.log(startMomentDate.toDate())
-        dateRange.push(startMomentDate.clone().format('YYYY-MM-DD'))
-    }
-    // const dateRange = [moment({...startMomentDate})]
-
-    // while(startMomentDate.date() < endMomentDate.date()){
-    //     startMomentDate.add(1, 'day')
-    //     console.log(startMomentDate)
-    //     dateRange.push(moment({...startMomentDate}))
-    // }
-
-    // dateRange.map(x => x.format("YYYY-MM-DD"))
-    // return res.json(dateRange.map(x => x.format("YYYY-MM-DD")))
-    // return res.json(dateRange)
-
-    const startTime = moment(start_time, 'HH:mm')
-    const endTime = moment(end_time, 'HH:mm')
-
-    startTime.minutes(Math.ceil(startTime.minutes() / 15) * 15)
-
-    const timeList = []
-
-    const current = moment(startTime)
-
-    while (current <= endTime) {
-        timeList.push(current.format('HH:mm'))
-        current.add(15, 'minutes')
-    }
-
-    // console.log(timeList)
-
-    const dateTimeList = []
-
-    for(let date of dateRange) {
-        for(let time of timeList){
-            dateTimeList.push(date + " " + time)
-        }
-    }
-
-    return res.json(dateTimeList)
 
 })
 

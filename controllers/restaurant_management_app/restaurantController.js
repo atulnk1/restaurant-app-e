@@ -122,7 +122,7 @@ controller.post("/restaurant_management/create", async(req, res) => {
             const endDateArray = restaurant_end_date.split("-")
             const endDate = endDateArray[2] + "-" + endDateArray[1] + "-" + endDateArray[0]
 
-            
+            const resetaurantCuisineSearch = restaurant_cuisine.join(", ")
 
             const restaurantCreated = await restaurant.create({
                 data: {
@@ -136,6 +136,7 @@ controller.post("/restaurant_management/create", async(req, res) => {
                     restaurant_opening_hours,
                     restaurant_facilities,
                     restaurant_cuisine,
+                    restaurant_cuisine_search: resetaurantCuisineSearch,
                     restaurant_cost,
                     restaurant_start_date: new Date(startDate),
                     restaurant_end_date: new Date(endDate),

@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -15,6 +16,7 @@ model restaurant {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   restaurant_name String @db.VarChar(255)
+  restaurant_description String @db.Text @default("")
   restaurant_location_address String @db.VarChar(255)
   restaurant_location_city String @db.VarChar(255)
   restaurant_location_country String @db.VarChar(255)
@@ -24,6 +26,7 @@ model restaurant {
   restaurant_opening_hours String @db.VarChar(255)
   restaurant_facilities String[]
   restaurant_cuisine String[]
+  restaurant_cuisine_search String @default("none")
   restaurant_cost Int
   restaurant_start_date DateTime
   restaurant_end_date DateTime
