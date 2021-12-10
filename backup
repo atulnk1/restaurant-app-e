@@ -3,6 +3,7 @@ model restaurant {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   restaurant_name String @db.VarChar(255)
+  restaurant_description String @db.Text @default("")
   restaurant_location_address String @db.VarChar(255)
   restaurant_location_city String @db.VarChar(255)
   restaurant_location_country String @db.VarChar(255)
@@ -12,6 +13,7 @@ model restaurant {
   restaurant_opening_hours String @db.VarChar(255)
   restaurant_facilities String[]
   restaurant_cuisine String[]
+  restaurant_cuisine_search String @default("none")
   restaurant_cost Int
   restaurant_start_date DateTime
   restaurant_end_date DateTime
@@ -23,6 +25,7 @@ model restaurant {
   restaurant_max_table_three Int
   restaurant_max_table_four Int
   restaurant_max_table_five Int
+  restauarant_featured Boolean @default(false)
   restaurant_status String @default("open")
   reservation reservations[]
   availabilityDateTime availabilityDateTime[]
@@ -40,7 +43,8 @@ model diner_user {
 model reservations {
   id String @id @default(uuid())
   party_size Int
-  date DateTime
+  display_date String
+  system_date DateTime
   time String
   reservation_status String @default("booked")
   created_at DateTime @default(now())
@@ -61,4 +65,10 @@ model availabilityDateTime {
   available_table_five Int
   restaurant restaurant @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
+}
+
+model restaurant_user {
+  id String @id @default(uuid())
+  email String @unique
+  password String @db.VarChar(255)
 }
