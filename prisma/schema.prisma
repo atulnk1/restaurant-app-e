@@ -79,3 +79,9 @@ model availabilityDateTime {
   restaurant restaurant @relation(fields: [restaurant_id], references: [id])
   restaurant_id Int
 }
+
+model restaurant_user {
+  id String @id @default(uuid())
+  email String @unique
+  password String @db.VarChar(255)
+}

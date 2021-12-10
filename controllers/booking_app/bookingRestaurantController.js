@@ -387,7 +387,7 @@ controller.get("/restaurant/featured", async(req, res) => {
 controller.get("/restaurant/:id", async(req, res) => {
     try {
 
-        const restaurant_id  = req.params.id
+        const restaurant_id  = parseInt(req.params.id)
 
         const restaurantInfo = await restaurant.findUnique({
             where: {
@@ -402,10 +402,16 @@ controller.get("/restaurant/:id", async(req, res) => {
                 restaurant_location_country: true,
                 restaurant_location_lat: true,
                 restaurant_location_long: true,
+                restaurant_start_date: true,
+                restaurant_end_date: true,
+                restaurant_start_time: true,
+                restaurant_end_time: true,
                 restaurant_cost: true,
                 restaurant_image: true,
                 restaurant_opening_hours: true,
-                restaurant_facilities: true
+                restaurant_facilities: true,
+                restaurant_average_seating_time: true,
+                restaurant_status: true
             }
         })
 

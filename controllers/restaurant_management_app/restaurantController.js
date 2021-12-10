@@ -5,6 +5,8 @@ const passport = require("passport");
 const prismaClient = require('../../controller_support/prisma');
 const moment = require("moment");
 
+const authChecker = passport.authenticate("jwt", { session: false })
+
 const { restaurant, availabilityDateTime } = prismaClient
 
 const dateRangeGenerator = (startDate, endDate) => {
@@ -63,7 +65,7 @@ const dateTimeGenerator = (startDate, endDate, startTime, endTime, tableForOne, 
 }
 
 
-controller.post("/restaurant_management/create", async(req, res) => {
+controller.post("/restaurant_management/create", authChecker, async(req, res) => {
     try {
 
         // restaurant_start_date and restaurant_end_date use the AMERICAN MM/DD/YYYY system
@@ -179,7 +181,7 @@ controller.post("/restaurant_management/create", async(req, res) => {
     }
 })
 
-controller.get("/restaurant_management/:id/edit", async(req, res) => {
+controller.get("/restaurant_management/:id/edit", authChecker, async(req, res) => {
     try {
         const restaurant_id = parseInt(req.params.id)
     
@@ -207,7 +209,7 @@ controller.get("/restaurant_management/:id/edit", async(req, res) => {
     
 })
 
-controller.put("/restaurant_management/:id", async(req, res) => {
+controller.put("/restaurant_management/:id", authChecker, async(req, res) => {
     try {
         const restaurant_id = parseInt(req.params.id)
 
@@ -277,7 +279,7 @@ controller.put("/restaurant_management/:id", async(req, res) => {
     
 })
 
-controller.delete("/restaurant_management/:id", async(req, res) => {
+controller.delete("/restaurant_management/:id", authChecker, async(req, res) => {
     try {
         const restaurant_id = parseInt(req.params.id)
 

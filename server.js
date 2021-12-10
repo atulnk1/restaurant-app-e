@@ -15,6 +15,8 @@ const bookingReservationController = require("./controllers/booking_app/bookingR
 
 // Required Restaurant Management App Controllers
 const restaurantController = require("./controllers/restaurant_management_app/restaurantController")
+const restaurantAuthController = require("./controllers/restaurant_management_app/restaurantAuthController")
+
 
 
 // Express set up and middleware usage
@@ -29,8 +31,11 @@ app.use('/api', authController)
 app.use('/api', bookingRestaurantController)
 app.use('/api', bookingReservationController)
 
+
 // Linking to Restaurant Management App Controllers
 app.use('/api', restaurantController)
+app.use('/api', restaurantAuthController)
+
 
 app.listen(PORT, () => {
     console.log(`server is running on PORT ${PORT}`);
