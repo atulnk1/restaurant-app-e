@@ -128,6 +128,8 @@ controller.get("/restaurant/search", async(req, res) => {
 
         const { party_size, date, time, search_term, city, search_flag } = req.body
 
+        let page = parseInt(req.query.p)
+
         // Need to modify search to take in a flag
         // If the search_flag is location, that means user chose a location so you need to seach only by location that may or may not be users local location
         // If the search_flag is cuisine, that means user chose a cuisine and the city will be the local location
@@ -335,8 +337,21 @@ controller.get("/restaurant/search", async(req, res) => {
                     break;
             }
         }
+        
+        const pageCount = Math.ceil(availableRestaurantList.length / 5);
+        if(!page) {
+            page=1
+        }
 
-        return res.send(availableRestaurantList)
+        if(page > pageCount){
+            page = pageCount
+        }
+
+        return res.json({
+            "page": page,
+            "pageCount": pageCount,
+            "restaurants": availableRestaurantList.slice(page * 5 - 5, page * 5)
+        })
 
 
     } catch (e) {
