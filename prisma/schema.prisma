@@ -16,7 +16,7 @@ model restaurant {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   restaurant_name String @db.VarChar(255)
-  restaurant_description String @db.Text @default("")
+  restaurant_description String @db.Text @default("none")
   restaurant_location_address String @db.VarChar(255)
   restaurant_location_city String @db.VarChar(255)
   restaurant_location_country String @db.VarChar(255)
