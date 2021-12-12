@@ -15,11 +15,24 @@ const authChecker = passport.authenticate("jwt", { session: false })
 controller.post("/auth/register", async (req, res) => {
     try {
         const { email, first_name, last_name, password, profile_picture } = req.body;
-        const hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
 
         if(!email || !first_name || !last_name || !password){
             return res.status(422).json({error: "Fields are missing."})
         } 
+
+        const trimmedEmail = email.trim()
+        const trimmedFirstName = first_name.trim()
+        const trimmedLastName = last_name.trim()
+        const trimmedPassword = password.trim()
+
+
+        if(trimmedEmail === "" ||trimmedFirstName === "" || trimmedLastName === "" || trimmedPassword === ""){
+            return res.status(422).json({error: "Email, First Name, Last Name and Password cannot be empty!"})
+        }
+
+        // We will not use the trimmedPassword as the user might have entered spaces in their password on either end. The trimmedPassword is just to ensure that only whitespaces are not allowed
+        const hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
+
 
         const existingUser = await diner_user.findUnique({
             where: {
@@ -35,9 +48,9 @@ controller.post("/auth/register", async (req, res) => {
 
             await diner_user.create({
                 data: {
-                    email: email,
-                    first_name: first_name,
-                    last_name: last_name,
+                    email: trimmedEmail,
+                    first_name: trimmedFirstName,
+                    last_name: trimmedLastName,
                     password: hashedPassword,
                     profile_picture: profile_picture
                 }
@@ -134,6 +147,18 @@ controller.patch("/auth", authChecker, async(req, res) => {
 
         const { first_name, last_name, password, profile_picture } = req.body
 
+        if(!first_name || !last_name || !profile_picture) {
+            return res.status(422).json({error:"Fields are missing, please check again!"})
+        }
+
+        const trimmedFirstName = first_name.trim()
+        const trimmedLastName = last_name.trim()
+
+        if(trimmedFirstName === "" || trimmedLastName === ""){
+            return res.status(422).json({error: "First Name and Last Name cannot be empty!"})
+        }
+
+
         const existingUser = await diner_user.findUnique({
             where: {
                 id: userId
@@ -144,22 +169,23 @@ controller.patch("/auth", authChecker, async(req, res) => {
             return res.status(404).json({error: "Invalid user id!"})
         } 
 
+        // Since password is set to blank on the frontend if the user does not enter their password, we will won't set password unless it is a non-empty value
         let editPayload = {}
         if(!password || password === "") {
             editPayload = {
-                first_name,
-                last_name,
+                first_name: trimmedFirstName,
+                last_name: trimmedLastName,
                 profile_picture
             }
         } else {
             const hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
             editPayload = {
-                first_name,
-                last_name,
+                first_name: trimmedFirstName,
+                last_name: trimmedLastName,
                 profile_picture,
                 password: hashedPassword
             }
-        }
+        } 
 
         const updateUser = await diner_user.update({
             where: {
@@ -171,13 +197,12 @@ controller.patch("/auth", authChecker, async(req, res) => {
                 first_name: true,
                 last_name: true,
                 profile_picture: true,
-                email: true,
-                password: true
+                email: true
             }
         })
 
         if(!updateUser) {
-            res.status(422).json({error: "Sorry, unable to update you account info, please try again later"})
+            res.status(422).json({error: "Sorry, unable to update your account info, please try again later"})
         }
 
         return res.json(updateUser)
