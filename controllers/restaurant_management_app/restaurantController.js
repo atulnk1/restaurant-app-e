@@ -71,6 +71,7 @@ controller.post("/restaurant_management/create", authChecker, async(req, res) =>
         // restaurant_start_date and restaurant_end_date use the AMERICAN MM/DD/YYYY system
         const { 
             restaurant_name, 
+            restaurant_description,
             restaurant_location_address, 
             restaurant_location_city,
             restaurant_location_country,
@@ -94,6 +95,7 @@ controller.post("/restaurant_management/create", authChecker, async(req, res) =>
          } = req.body
 
          if(!restaurant_name ||
+            !restaurant_description ||
             !restaurant_location_address ||
             !restaurant_location_city ||
             !restaurant_location_country ||
@@ -129,6 +131,7 @@ controller.post("/restaurant_management/create", authChecker, async(req, res) =>
             const restaurantCreated = await restaurant.create({
                 data: {
                     restaurant_name, 
+                    restaurant_description,
                     restaurant_location_address, 
                     restaurant_location_city,
                     restaurant_location_country,

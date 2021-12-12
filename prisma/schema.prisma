@@ -50,6 +50,7 @@ model diner_user {
   first_name String 
   last_name String
   password String @db.VarChar(255)
+  profile_picture String @default("https://i.ibb.co/VVYpp4D/rose-default-profile-pic.png")
   reservations reservations[]
 }
 
