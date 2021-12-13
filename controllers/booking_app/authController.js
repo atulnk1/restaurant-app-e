@@ -171,7 +171,7 @@ controller.patch("/auth", authChecker, async(req, res) => {
 
         // Since password is set to blank on the frontend if the user does not enter their password, we will won't set password unless it is a non-empty value
         let editPayload = {}
-        if(!password || password === "") {
+        if(!password || password.trim() === "") {
             editPayload = {
                 first_name: trimmedFirstName,
                 last_name: trimmedLastName,

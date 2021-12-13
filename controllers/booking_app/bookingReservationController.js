@@ -24,6 +24,79 @@ const timeRangeGenerator = (startMomentTime, endMomentTime) => {
 
     return timeList
 }
+
+// Check if for the specific date & party size, what are the available time slots
+controller.get("/reservation/time_list", async (req,res) => {
+    const { party_size, date, restaurant_id } = req.body
+
+    if(!party_size || !date || !restaurant_id){
+        return res.status(422).json({error: "Reservation fields are missing!"})
+    }
+
+    const restaurantId = parseInt(restaurant_id)
+
+    // 1 Find the start time, end time and restaurant max seating time for a given restaurant using the restaurant_id
+    const resetaurantValues = await restaurant.findUnique({
+        where: {
+            id: restaurantId
+        },
+        select: {
+            id: true, 
+            restaurant_average_seating_time: true,
+            restaurant_start_time: true,
+            restaurant_end_time: true
+        }
+    })
+
+    // 2 Create a time range based on the start and end time
+    const restaurantStartTime = moment(resetaurantValues.restaurant_start_time, 'HH:mm')
+    const restaurantEndTime = moment(resetaurantValues.restaurant_end_time, 'HH:mm')
+
+    const fullRestaurantTimeList = timeRangeGenerator(restaurantStartTime, restaurantEndTime)
+
+    
+    const checkDateArray = date.split("-")
+    const checkDate = checkDateArray[2] + "-" + checkDateArray[1] + "-" + checkDateArray[0]
+
+    let avialabaleTimeList = []
+    let newAvailabilityCheck = false
+    for(i = 0; i < fullRestaurantTimeList.length; i++){
+        let timeWindow = fullRestaurantTimeList.slice(i, i+4)
+        let unverifiedTimeList = []
+        for(let indTime of timeWindow) {
+            unverifiedTimeList.push(
+                {
+                    date_time: "" + moment(checkDate, 'YYYY-MM-DD').format('YYYY-MM-DD') + " " + moment(indTime, 'HH:mm').format('HH:mm'),
+                    available_table_one: {
+                        gt: 0
+                    },
+                    restaurant_id
+                }
+            )
+        }
+
+        // 3 For each time slot, see if there is any availability for that specific time for the time window 
+        newAvailabilityCheck = await availabilityDateTime.findMany({
+            where: {
+                OR: unverifiedTimeList
+            }
+        })
+
+        if(newAvailabilityCheck.length === timeWindow.length) {
+            avialabaleTimeList.push(fullRestaurantTimeList[i])
+        }
+
+    }
+
+    if(!avialabaleTimeList) {
+        return res.status(422).json({error: "Sorry, none of the chosen times are avialable"})
+    }
+
+    // 4 Send back the updated list to the front end
+
+    return res.json(avialabaleTimeList)
+})
+
 // Advanced version of the booking flow that takes into consideration availbility slots
 controller.post("/v2/reservation/book", authChecker, async (req,res) => {
     try {
@@ -458,7 +531,7 @@ controller.post("/reservation/book", authChecker, async (req, res) => {
     }
 })
 
-// GET either upcoming or past reservation
+// GET either upcoming or past reservation on user profile page to display to them
 controller.get("/reservation", authChecker, async (req, res) => {
     try {
 
@@ -478,6 +551,15 @@ controller.get("/reservation", authChecker, async (req, res) => {
                 },
                 orderBy: {
                     system_date: 'asc'
+                },
+                select: {
+                    id: true,
+                    party_size: true,
+                    display_date: true,
+                    time: true,
+                    reservation_status: true,
+                    diner_id: true,
+                    restaurant_id: true
                 }
             })
     
@@ -1428,7 +1510,7 @@ controller.patch("/v2/reservation/:reservation_id/cancel", authChecker, async(re
         })
 
         if(currentReservationAvailabilityDateTime.reservation_status === 'cancelled') {
-            return res.status(400).json({error: "Reservation is already canclled!"})
+            return res.status(400).json({error: "Reservation is already cancelled!"})
         }
         // 2 Get information of the restaurant that is being called: average seating time, max seating capacity
         const restaurantValues = await restaurant.findUnique({
