@@ -5,6 +5,7 @@ const PORT = process.env.PORT
 // Passport set up for token verification
 const passport = require("passport");
 const strategy = require("./controller_support/passport");
+const cors = require("cors")
 
 passport.use(strategy)
 
@@ -25,6 +26,7 @@ const app = express()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
+app.use(cors());
 
 // Linking to Booking App Controllers
 app.use('/api', authController)
