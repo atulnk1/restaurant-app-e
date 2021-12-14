@@ -8,9 +8,9 @@ const moment = require("moment");
 const { restaurant, availabilityDateTime } = prismaClient;
 
 // GET all restaurants in the database
-controller.get("/restaurant/list", async (req, res) => {
+controller.get("/restaurants/list", async (req, res) => {
     
-    const { city } = req.body
+    const { city } = req.query
 
     try {
         const restaurants = await restaurant.findMany({
@@ -45,10 +45,10 @@ controller.get("/restaurant/list", async (req, res) => {
 // For the cuisine search, it does apply the curret city as the user is finding cuisines in their city
 // For the restaurant search, it does apply the current city as the user is finding cuisines in their city
 
-controller.get("/restaurant/suggested", async(req, res) => {
+controller.get("/restaurants/suggested", async(req, res) => {
     try {
 
-        const {search_term, city} = req.body
+        const {searchTerm, city} = req.query
 
         // Find a list of distinct locations: cities and country combinations 
         const locationList = await restaurant.findMany({
@@ -56,13 +56,13 @@ controller.get("/restaurant/suggested", async(req, res) => {
                 OR: [
                     {
                         restaurant_location_city: {
-                            contains: search_term,
+                            contains: searchTerm,
                             mode: 'insensitive'
                         },
                     }, 
                     {
                         restaurant_location_country: {
-                            contains: search_term,
+                            contains: searchTerm,
                             mode: 'insensitive'
                         }
                     }
@@ -83,7 +83,7 @@ controller.get("/restaurant/suggested", async(req, res) => {
         const cuisineList = await restaurant.findMany({
             where: {
                 restaurant_cuisine_search: {
-                    contains: search_term,
+                    contains: searchTerm,
                     mode: 'insensitive'
                 },
                 restaurant_status: "open",
@@ -99,7 +99,7 @@ controller.get("/restaurant/suggested", async(req, res) => {
         const restaurantNameList = await restaurant.findMany({
             where: {
                 restaurant_name: {
-                    contains: search_term,
+                    contains: searchTerm,
                     mode: 'insensitive'
                 },
                 restaurant_status: "open",
@@ -123,12 +123,17 @@ controller.get("/restaurant/suggested", async(req, res) => {
 })
 
 // Search endpoint
-controller.get("/restaurant/search", async(req, res) => {
+controller.get("/restaurants/search", async(req, res) => {
     try {
 
-        const { party_size, date, time, search_term, city, search_flag } = req.body
+        const { partySize, searchDate, searchTime, searchTerm, city, searchFlag, p } = req.query
 
-        let page = parseInt(req.query.p)
+        const party_size = parseInt(partySize)
+        const date = searchDate
+        const time = searchTime
+        const search_term = searchTerm
+        const search_flag = searchFlag
+        const page = parseInt(p)
 
         // Need to modify search to take in a flag
         // If the search_flag is location, that means user chose a location so you need to seach only by location that may or may not be users local location
@@ -364,10 +369,10 @@ controller.get("/restaurant/search", async(req, res) => {
 
 // Get featured restaurants
 
-controller.get("/restaurant/featured", async(req, res) => {
+controller.get("/restaurants/featured", async(req, res) => {
     try {
         
-        const { city } = req.body
+        const { city } = req.query
 
         const featuredList = await restaurant.findMany({
             where: {
@@ -399,7 +404,7 @@ controller.get("/restaurant/featured", async(req, res) => {
     }
 })
 
-controller.get("/restaurant/:id", async(req, res) => {
+controller.get("/restaurants/:id", async(req, res) => {
     try {
 
         const restaurant_id  = parseInt(req.params.id)
