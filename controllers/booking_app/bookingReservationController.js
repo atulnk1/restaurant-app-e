@@ -26,7 +26,7 @@ const timeRangeGenerator = (startMomentTime, endMomentTime) => {
 }
 
 // Check if for the specific date & party size, what are the available time slots
-controller.get("/reservation/time_list", async (req,res) => {
+controller.get("/reservation/time-list", async (req,res) => {
     const { party_size, date, restaurant_id } = req.body
 
     if(!party_size || !date || !restaurant_id){
