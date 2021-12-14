@@ -39,8 +39,8 @@ app.use('/api', restaurantController)
 app.use('/api', restaurantAuthController)
 
 app.get('/hello', function (req, res) {
-    res.json({msg: 'This is CORS-enabled for only example.com.'})
-  })
+    res.json({msg: 'This is CORS-enabled for all origins!.'})
+})
 
 app.listen(PORT, () => {
     console.log(`server is running on PORT ${PORT}`);

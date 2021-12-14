@@ -1,5 +1,6 @@
 const express = require("express");
 const controller = express.Router();
+const cors = require("cors")
 const passport = require("passport");
 // const { PrismaClient } = require("@prisma/client");
 const prismaClient = require('../../controller_support/prisma');
@@ -26,7 +27,7 @@ const timeRangeGenerator = (startMomentTime, endMomentTime) => {
 }
 
 // Check if for the specific date & party size, what are the available time slots
-controller.get("/reservation/time-list", async (req,res) => {
+controller.get("/reservation/time-list", cors(), async (req,res) => {
     const { party_size, date, restaurant_id } = req.body
 
     if(!party_size || !date || !restaurant_id){
