@@ -58,10 +58,13 @@ controller.get("/reservation/time_list", async (req,res) => {
     const checkDateArray = date.split("-")
     const checkDate = checkDateArray[2] + "-" + checkDateArray[1] + "-" + checkDateArray[0]
 
+    // Need this to find the window size for a restaurant that is being booked
+    const checkWindowSize = parseInt(resetaurantValues.restaurant_average_seating_time) / 15
+
     let avialabaleTimeList = []
     let newAvailabilityCheck = false
     for(i = 0; i < fullRestaurantTimeList.length; i++){
-        let timeWindow = fullRestaurantTimeList.slice(i, i+4)
+        let timeWindow = fullRestaurantTimeList.slice(i, i+checkWindowSize)
         let unverifiedTimeList = []
         for(let indTime of timeWindow) {
             unverifiedTimeList.push(
