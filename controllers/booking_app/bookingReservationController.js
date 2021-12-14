@@ -1,6 +1,6 @@
 const express = require("express");
 const controller = express.Router();
-const cors = require("cors")
+const cors = require("cors");
 const passport = require("passport");
 // const { PrismaClient } = require("@prisma/client");
 const prismaClient = require('../../controller_support/prisma');
@@ -31,6 +31,7 @@ controller.get("/reservation/time-list", cors(), async (req,res) => {
     const { party_size, date, restaurant_id } = req.body
 
     if(!party_size || !date || !restaurant_id){
+        console.log(req.body)
         return res.status(422).json({error: "Reservation fields are missing!"})
     }
 
