@@ -1,6 +1,5 @@
 const express = require("express");
 const controller = express.Router();
-const cors = require("cors");
 const passport = require("passport");
 // const { PrismaClient } = require("@prisma/client");
 const prismaClient = require('../../controller_support/prisma');
@@ -27,20 +26,23 @@ const timeRangeGenerator = (startMomentTime, endMomentTime) => {
 }
 
 // Check if for the specific date & party size, what are the available time slots
-controller.post("/reservation/time-list", cors(), async (req,res) => {
-    const { party_size, date, restaurant_id } = req.body
+controller.get("/reservations/time-list", async (req,res) => {
+    const { partySize, listDate, restaurantId } = req.query
+
+    const party_size = parseInt(partySize)
+    const date = listDate
+    const restaurant_id = parseInt(restaurantId)
 
     if(!party_size || !date || !restaurant_id){
-        console.log(req.body)
         return res.status(422).json({error: "Reservation fields are missing!"})
     }
 
-    const restaurantId = parseInt(restaurant_id)
+    // const restaurantId = parseInt(restaurant_id)
 
     // 1 Find the start time, end time and restaurant max seating time for a given restaurant using the restaurant_id
     const resetaurantValues = await restaurant.findUnique({
         where: {
-            id: restaurantId
+            id: restaurant_id
         },
         select: {
             id: true, 
@@ -103,7 +105,7 @@ controller.post("/reservation/time-list", cors(), async (req,res) => {
 })
 
 // Advanced version of the booking flow that takes into consideration availbility slots
-controller.post("/v2/reservation/book", authChecker, async (req,res) => {
+controller.post("/v2/reservations/book", authChecker, async (req,res) => {
     try {
 
         const diner_id = req.user.id
@@ -349,7 +351,7 @@ controller.post("/v2/reservation/book", authChecker, async (req,res) => {
 
 
 // POST a reservation
-controller.post("/reservation/book", authChecker, async (req, res) => {
+controller.post("/reservations/book", authChecker, async (req, res) => {
     try {
         const diner_id = req.user.id
 
@@ -537,16 +539,16 @@ controller.post("/reservation/book", authChecker, async (req, res) => {
 })
 
 // GET either upcoming or past reservation on user profile page to display to them
-controller.get("/reservation", authChecker, async (req, res) => {
+controller.get("/reservations", authChecker, async (req, res) => {
     try {
 
-        const reservationState = req.query.reservation_state
+        const reservation_state = req.query.reservationState
 
         const currentDate = new Date()
 
         const diner_id = req.user.id
 
-        if(reservationState === "upcoming") {
+        if(reservation_state === "upcoming") {
             const upcomingReservations = await reservations.findMany({
                 where:{
                     system_date: {
@@ -570,7 +572,7 @@ controller.get("/reservation", authChecker, async (req, res) => {
     
             return res.json(upcomingReservations)
 
-        } else if (reservationState === "past") {
+        } else if (reservation_state === "past") {
             const pastReservations = await reservations.findMany({
                 where:{
                     system_date: {
@@ -609,7 +611,7 @@ controller.get("/reservation", authChecker, async (req, res) => {
 
 
 // GET reservation information: party_size, date and to edit. restaurant_id sent as well to find restaurant to edit later
-controller.get("/reservation/:reservation_id/edit", authChecker, async (req, res) => {
+controller.get("/reservations/:reservation_id/edit", authChecker, async (req, res) => {
     try {
 
         const reservation_id = req.params.reservation_id
@@ -641,7 +643,7 @@ controller.get("/reservation/:reservation_id/edit", authChecker, async (req, res
 }) 
 
 // Advanced version of the edit flow that takes into consideration availbility slots
-controller.patch("/v2/reservation/:reservation_id", authChecker, async(req, res ) => {
+controller.patch("/v2/reservations/:reservation_id", authChecker, async(req, res ) => {
     try {
         const reservation_id = req.params.reservation_id
 
@@ -1155,7 +1157,7 @@ controller.patch("/v2/reservation/:reservation_id", authChecker, async(req, res 
 
 
 // PATCH edit reservation details
-controller.patch("/reservation/:reservation_id", authChecker, async(req, res) => {
+controller.patch("/reservations/:reservation_id", authChecker, async(req, res) => {
     try {
         const reservation_id = req.params.reservation_id
 
@@ -1496,7 +1498,7 @@ controller.patch("/reservation/:reservation_id", authChecker, async(req, res) =>
 })
 
 
-controller.patch("/v2/reservation/:reservation_id/cancel", authChecker, async(req, res) => {
+controller.patch("/v2/reservations/:reservation_id/cancel", authChecker, async(req, res) => {
     try {
         const reservation_id = req.params.reservation_id
 
@@ -1781,7 +1783,7 @@ controller.patch("/v2/reservation/:reservation_id/cancel", authChecker, async(re
 })
 
 // PATCH to cancel a reservation
-controller.patch("/reservation/:reservation_id/cancel", authChecker, async (req, res) => {
+controller.patch("/reservations/:reservation_id/cancel", authChecker, async (req, res) => {
 
     try {
 
