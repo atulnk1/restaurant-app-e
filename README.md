@@ -1,7 +1,7 @@
 # DishTable Backend
 > This is the backend app for DishTable, you can find the GitHub for the Nextjs frontend app here: https://github.com/darrylwongqz/dishtable. 
 
-> The app link can be found here: 
+The app link can be found here: 
 
 ## Table of Contents
 * [General Info](#general-information)
