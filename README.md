@@ -50,7 +50,6 @@ Project is: _complete_
 
 
 ## Room for Improvement
-Include areas you believe need improvement / could be improved. Also add TODOs for future development.
 
 Room for improvement:
 - Switching out moment to use a more modern date library like Luxio 
