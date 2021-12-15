@@ -569,8 +569,30 @@ controller.get("/reservations", authChecker, async (req, res) => {
                     restaurant_id: true
                 }
             })
+
+            const upcomingReservationCombined = []
+            for(i=0; i<upcomingReservations.length; i++){
+                let bookingDetails = upcomingReservations[i]
+                let restaurantIdInternal = upcomingReservations[i].restaurant_id
+                let restaurantDetails = await restaurant.findUnique({
+                    where: {
+                        id: restaurantIdInternal
+                    },
+                    select: {
+                        restaurant_name: true,
+                        restaurant_cuisine: true,
+                        restaurant_location_address: true, 
+                        restaurant_cost: true,
+                        restaurant_image: true,
+                        restaurant_location_city: true,
+                        restaurant_location_country: true
+                    }
+                })
+                
+                upcomingReservationCombined.push({bookingDetails, restaurantDetails})
+            }
     
-            return res.json(upcomingReservations)
+            return res.json({upcomingReservationCombined})
 
         } else if (reservation_state === "past") {
             const pastReservations = await reservations.findMany({
@@ -593,8 +615,30 @@ controller.get("/reservations", authChecker, async (req, res) => {
                     restaurant_id: true
                 }
             })
-    
-            return res.json(pastReservations)
+
+            const pastReservationCombined = []
+            for(i=0; i<pastReservations.length; i++){
+                let bookingDetails = pastReservations[i]
+                let restaurantIdInternal = pastReservations[i].restaurant_id
+                let restaurantDetails = await restaurant.findUnique({
+                    where: {
+                        id: restaurantIdInternal
+                    },
+                    select: {
+                        restaurant_name: true,
+                        restaurant_cuisine: true,
+                        restaurant_location_address: true, 
+                        restaurant_cost: true,
+                        restaurant_image: true,
+                        restaurant_location_city: true,
+                        restaurant_location_country: true
+                    }
+                })
+                
+                pastReservationCombined.push({bookingDetails, restaurantDetails})
+            }
+
+            return res.json(pastReservationCombined)
         } else {
             return res.status(422).json({error: "Invalid query parameter"})
         }
