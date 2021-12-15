@@ -1,5 +1,6 @@
 # DishTable Backend
-> This is the backend app for DishTable, you can find the GitHub for the Nextjs frontend app here: https://github.com/darrylwongqz/dishtable
+> This is the backend app for DishTable, you can find the GitHub for the Nextjs frontend app here: https://github.com/darrylwongqz/dishtable. 
+
 > The app link can be found here: 
 
 ## Table of Contents
@@ -23,14 +24,14 @@
 - Express: A Node.js web application framework to build robust APIs
 - Prisma: An ORM used to interact with our Postgresql database
 - Passport & Passport-JWT: Used for JWT authentication 
-- Moment: For creating and managing dates and times for making bookings
+- Momentjs: For creating and managing dates and times for making bookings
 
 
 
 ## Features
 Here are some of the features that we currently have:
 - User Authentication
-- User Profile Edit
+- User Profile Edit: Allows logged in users to edit profile picture, first name, last name and password
 - Search Suggestions: Based on the query the user has typed, user will see suggestions for - Locations, Cuisines and Restaurants
 - Availability Search: Ability to get back restaurants that are avialable for a give party size, date and time. Free text search supported as well
 - Restaurant Booking: Allows logged in users to make bookings for their favourite restaurant 
