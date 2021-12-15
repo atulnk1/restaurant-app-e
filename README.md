@@ -56,5 +56,5 @@ Room for improvement:
 - Create a more efficient way to check and store availability for restaurant tables
 - Use a third party search engine like Elasticsearch or Algolia
 
-To do:
+Potential To do:
 - Build a simple restaurant management app for restaurants to view reservations for the venue 
