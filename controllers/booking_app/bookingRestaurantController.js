@@ -133,7 +133,8 @@ controller.get("/restaurants/search", async(req, res) => {
         const time = searchTime
         const search_term = searchTerm
         const search_flag = searchFlag
-        const page = parseInt(p)
+        let page = parseInt(p)
+
 
         // Need to modify search to take in a flag
         // If the search_flag is location, that means user chose a location so you need to seach only by location that may or may not be users local location
