@@ -162,6 +162,9 @@ controller.patch("/auth", authChecker, async(req, res) => {
         const existingUser = await diner_user.findUnique({
             where: {
                 id: userId
+            },
+            select: {
+                profile_picture: true
             }
         })
 
@@ -171,12 +174,27 @@ controller.patch("/auth", authChecker, async(req, res) => {
 
         // Since password is set to blank on the frontend if the user does not enter their password, we will won't set password unless it is a non-empty value
         let editPayload = {}
-        if(!password || password.trim() === "") {
+        if((!password || password.trim() === "") && profile_picture) {
             editPayload = {
                 first_name: trimmedFirstName,
                 last_name: trimmedLastName,
                 profile_picture
             }
+        } else if ((!password || password.trim() === "") && !profile_picture){ 
+            editPayload = {
+                first_name: trimmedFirstName,
+                last_name: trimmedLastName,
+                profile_picture: existingUser.profile_picture
+            }
+        } else if(password && !profile_picture) {
+            const hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
+            editPayload = {
+                first_name: trimmedFirstName,
+                last_name: trimmedLastName,
+                profile_picture: existingUser.profile_picture,
+                password: hashedPassword
+            }
+
         } else {
             const hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10))
             editPayload = {
