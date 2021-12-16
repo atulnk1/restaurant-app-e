@@ -127,7 +127,7 @@ controller.get("/auth/edit", authChecker, async (req, res) => {
         )
 
         if(!existingUser) {
-            return res.status(404).json({error: "Invalid user id!"})
+            return res.status(401).json({error: "Invalid user id!"})
         } 
 
         return res.json(existingUser)
@@ -169,7 +169,7 @@ controller.patch("/auth", authChecker, async(req, res) => {
         })
 
         if(!existingUser) {
-            return res.status(404).json({error: "Invalid user id!"})
+            return res.status(401).json({error: "Invalid user id!"})
         } 
 
         // Since password is set to blank on the frontend if the user does not enter their password, we will won't set password unless it is a non-empty value
