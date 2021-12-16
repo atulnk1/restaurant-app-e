@@ -147,7 +147,7 @@ controller.patch("/auth", authChecker, async(req, res) => {
 
         const { first_name, last_name, password, profile_picture } = req.body
 
-        if(!first_name || !last_name || !profile_picture) {
+        if(!first_name || !last_name) {
             return res.status(422).json({error:"Fields are missing, please check again!"})
         }
 
