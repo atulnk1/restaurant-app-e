@@ -384,10 +384,11 @@ controller.get("/restaurants/featured", async(req, res) => {
                 updated_at: 'desc'
             },
             select: {
+                id: true,
                 restaurant_name: true,
                 restaurant_description: true,
                 restaurant_image: true,
-                restaurant_cost: true
+                restaurant_cost: true                
             }
         })
 
